@@ -1,0 +1,68 @@
+---
+title: "Final Project"
+author: "Rishitha"
+date: "2024-04-30"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(pwr)
+```
+
+## Introduction
+
+This report presents the power analysis for a Randomized Complete Block Design (RCBD) study with 6 treatments, where the mean of the first four treatments is provided, and the remaining two are estimated.
+
+## Data Preparation step
+
+```{r data-preparation}
+# Define initial data
+treatment_estimates <- c(80, 83, 86, 89)
+total_treatments <- 6  # Count of all treatments
+var_residual <- 55  # Residual variance assumed
+
+# Compute the mean of available estimates and estimate missing values
+average_estimate <- mean(treatment_estimates)
+complete_estimates <- c(treatment_estimates, rep(average_estimate, total_treatments - length(treatment_estimates)))
+```
+
+## Step Effect Size Calculation
+
+Calculate the Cohen's f, which is used to estimate the required power:
+
+```{r effect-size}
+cohen_f <- sqrt(sum((complete_estimates - average_estimate)^2) / (total_treatments - 1) / var_residual)
+```
+
+## Step Power Analysis
+
+Assessing power across different block sizes and determining the minimum blocks needed to achieve 80% power:
+
+```{r power-analysis}
+# Assess power across different block counts
+test_blocks <- c(5, 10, 15, 20, 25, 30)
+computed_powers <- sapply(test_blocks, function(block_count) {
+  pwr.anova.test(k = total_treatments, n = block_count, f = cohen_f, sig.level = 0.05)$power
+})
+
+# Compute the minimum block count required to achieve target power
+required_blocks <- min(test_blocks)  # Start from the smallest test block
+target_power <- 0.8
+while (pwr.anova.test(k = total_treatments, n = required_blocks, f = cohen_f, sig.level = 0.05)$power < target_power) {
+  required_blocks <- required_blocks + 1
+}
+```
+
+## Step Results
+
+Displaying the calculated power for each block size and the minimum blocks needed:
+
+```{r results}
+cat("Calculated power for each block size: ", computed_powers, "\n")
+cat("Minimum blocks needed to reach 80% power: ", required_blocks, "\n")
+```
+
